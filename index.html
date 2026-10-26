@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listenit</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* EN-TÊTE HAUT */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background-color: #121212;
+            border-bottom: 1px solid #1f1f1f;
+            z-index: 50;
+        }
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .app-logo-name {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #1db954;
+        }
+        .search-btn {
+            background: none;
+            border: none;
+            color: #b3b3b3;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .profile-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #282828;
+            border: 2px solid #1db954;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* CONTENU PRINCIPAL */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 140px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+        .suggestions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .track-card {
+            display: flex;
+            align-items: center;
+            background-color: #181818;
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .track-card:active {
+            background-color: #282828;
+        }
+        .track-card img {
+            width: 50px;
+            height: 50px;
+            border-radius: 6px;
+            object-fit: cover;
+            margin-right: 14px;
+        }
+        .track-card-info {
+            flex: 1;
+        }
+        .track-card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0 0 4px 0;
+        }
+        .track-card-artist {
+            font-size: 13px;
+            color: #b3b3b3;
+            margin: 0;
+        }
+
+        /* VOLET DISCRET DU COMPTE */
+        .profile-drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .profile-drawer-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .profile-drawer {
+            position: fixed;
+            top: 0; right: 0;
+            width: 75%; max-width: 280px; height: 100%;
+            background-color: #181818;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .profile-drawer.active {
+            transform: translateX(0);
+        }
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .close-drawer-btn {
+            background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;
+        }
+        .user-preview {
+            text-align: center; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #282828;
+        }
+        .user-preview img {
+            width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #1db954; margin-bottom: 10px;
+        }
+        .user-name { font-size: 16px; font-weight: bold; margin: 0 0 4px 0; }
+        .user-plan { font-size: 11px; color: #1db954; font-weight: bold; letter-spacing: 0.5px; }
+        .drawer-menu { display: flex; flex-direction: column; gap: 12px; }
+        .drawer-item {
+            display: flex; align-items: center; gap: 12px; background-color: #242424; padding: 12px; border-radius: 8px; color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; cursor: pointer;
+        }
+
+        /* PAGES SECONDAIRES (PARAMÈTRES & PROFIL) */
+        .sub-page {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #0f0f0f; z-index: 1100; display: flex; flex-direction: column;
+            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1); overflow-y: auto;
+        }
+        .sub-page.active { transform: translateY(0); }
+        .sub-page-header {
+            display: flex; align-items: center; gap: 16px; padding: 18px 20px; background-color: #121212; border-bottom: 1px solid #1f1f1f; position: sticky; top: 0;
+        }
+        .back-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+        .sub-page-title { font-size: 18px; font-weight: bold; margin: 0; }
+        .sub-page-content { padding: 20px; display: flex; flex-direction: column; gap: 24px; }
+        .setting-section-title { font-size: 13px; color: #1db954; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .setting-group { background-color: #181818; border-radius: 12px; overflow: hidden; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #242424; }
+        .setting-label { font-size: 15px; font-weight: 500; }
+        .setting-sublabel { font-size: 12px; color: #888; margin-top: 2px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #404040; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #1db954; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* MINI LECTEUR */
+        .mini-player {
+            position: fixed; bottom: 60px; left: 10px; right: 10px; height: 60px; background-color: #242424; border-radius: 12px; display: flex; align-items: center; padding: 0 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 100; cursor: pointer;
+        }
+        .mini-player-progress { position: absolute; bottom: 0; left: 12px; right: 12px; height: 3px; background-color: #404040; border-radius: 2px; overflow: hidden; }
+        .mini-player-progress-fill { width: 0%; height: 100%; background-color: #1db954; transition: width 0.2s linear; }
+        .mini-player img { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; margin-right: 12px; }
+        .mini-player-details { flex: 1; overflow: hidden; }
+        .mini-player-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
+        .mini-player-artist { font-size: 12px; color: #b3b3b3; margin: 2px 0 0 0; }
+        .mini-player-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 8px; }
+
+        /* LECTEUR GRAND FORMAT */
+        .full-player {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: #121212; z-index: 1200; display: flex; flex-direction: column; padding: 24px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.2, 1);
+        }
+        .full-player.active { transform: translateY(0); }
+        .full-player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .minimize-btn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+        .full-cover { width: 100%; aspect-ratio: 1/1; border-radius: 16px; object-fit: cover; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .full-track-info { text-align: left; margin-bottom: 20px; }
+        .full-track-title { font-size: 22px; font-weight: bold; margin: 0 0 6px 0; }
+        .full-track-artist { font-size: 16px; color: #b3b3b3; margin: 0; }
+        .full-progress-container { margin-bottom: 30px; }
+        .full-progress-bar { width: 100%; height: 6px; background-color: #404040; border-radius: 3px; appearance: none; outline: none; cursor: pointer; }
+        .full-time-info { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-top: 8px; }
+        .full-controls { display: flex; justify-content: space-around; align-items: center; }
+        .secondary-btn { background: none; border: none; color: #b3b3b3; font-size: 20px; cursor: pointer; }
+        .seek-btn { background: #282828; border: none; color: #fff; width: 44px; height: 44px; border-radius: 50%; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .big-play-btn { background-color: #1db954; color: #fff; border: none; width: 64px; height: 64px; border-radius: 50%; font-size: 26px; cursor: pointer; box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4); }
+
+        /* NAVIGATION BAS */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background-color: #121212; border-top: 1px solid #1f1f1f; display: flex; justify-content: space-around; align-items: center; z-index: 90;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #888; text-decoration: none; font-size: 11px; gap: 4px; cursor: pointer; }
+        .nav-item.active { color: #1db954; }
+        .nav-icon { font-size: 20px; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. EN-TÊTE -->
+    <div class="top-bar">
+        <div></div>
+        <div class="header-center">
+            <span class="app-logo-name">Listenit</span>
+            <button class="search-btn">🔍</button>
+        </div>
+        <div class="profile-btn" onclick="openDrawer()">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" alt="Profil">
+        </div>
+    </div>
+
+    <!-- 2. CONTENU PRINCIPAL -->
+    <div class="main-content">
+        <h2 class="section-title">Suggestions pour vous</h2>
+        <div class="suggestions-grid" id="playlist-container">
+            <!-- Injecté dynamiquement par JS -->
+        </div>
+    </div>
+
+    <!-- 3. VOLET DISCRET DU COMPTE -->
+    <div class="profile-drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="profile-drawer" id="profile-drawer">
+        <div class="drawer-header">
+            <span style="font-size: 14px; font-weight: bold; color: #888;">Mon Compte</span>
+            <button class="close-drawer-btn" onclick="closeDrawer()">✕</button>
+        </div>
+        
+        <div class="user-preview">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" alt="Profil">
+            <p class="user-name">Alexandre</p>
+            <span class="user-plan">FLAC VIP PASS</span>
+        </div>
+
+        <div class="drawer-menu">
+            <div class="drawer-item" onclick="closeDrawer(); openPage('settings-page');">
+                <span>⚙️</span>
+                <span>Paramètres</span>
+            </div>
+            <div class="drawer-item" onclick="closeDrawer(); openPage('profile-page');">
+                <span>👤</span>
+                <span>Mon Profil</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. PAGE DES PARAMÈTRES -->
+    <div class="sub-page" id="settings-page">
+        <div class="sub-page-header">
+            <button class="back-btn" onclick="closePage('settings-page')">←</button>
+            <h1 class="sub-page-title">Paramètres</h1>
+        </div>
+        <div class="sub-page-content">
+            <div>
+                <div class="setting-section-title">Qualité Audio & FLAC</div>
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <div>
+                            <div class="setting-label">Qualité FLAC 16-bit</div>
+                            <div class="setting-sublabel">Streaming Audio Haute Fidélité</div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. PAGE MON PROFIL -->
+    <div class="sub-page" id="profile-page">
+        <div class="sub-page-header">
+            <button class="back-btn" onclick="closePage('profile-page')">←</button>
+            <h1 class="sub-page-title">Mon Profil</h1>
+        </div>
+        <div class="sub-page-content">
+            <div style="text-align: center; margin-bottom: 10px;">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #1db954; object-fit: cover;">
+                <h2 style="margin: 10px 0 4px 0;">Alexandre</h2>
+                <span style="color: #1db954; font-size: 12px; font-weight: bold;">MEMBRE VIP FLAC</span>
+            </div>
+            <div class="setting-group">
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Nom d'utilisateur</div>
+                        <div class="setting-sublabel">Alexandre</div>
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">Format Audio Défaut</div>
+                        <div class="setting-sublabel">FLAC Lossless (16-bit / 44.1kHz)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. MINI LECTEUR -->
+    <div class="mini-player" onclick="openPage('full-player')">
+        <img id="mini-cover" src="" alt="Mini Cover">
+        <div class="mini-player-details">
+            <p class="mini-player-title" id="mini-title">-</p>
+            <p class="mini-player-artist" id="mini-artist">-</p>
+        </div>
+        <button class="mini-player-btn" id="mini-play-btn" onclick="event.stopPropagation(); toggleAudio();">▶</button>
+        <div class="mini-player-progress">
+            <div class="mini-player-progress-fill" id="mini-progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- 6. LECTEUR GRAND FORMAT -->
+    <div class="full-player" id="full-player">
+        <div class="full-player-header">
+            <button class="minimize-btn" onclick="closePage('full-player')">⌄</button>
+            <span style="font-size: 12px; color: #1db954; font-weight: bold;">EN COURS DE LECTURE</span>
+            <div></div>
+        </div>
+
+        <img id="full-cover" src="" alt="Full Cover" class="full-cover">
+
+        <div class="full-track-info">
+            <h2 class="full-track-title" id="full-title">-</h2>
+            <p class="full-track-artist" id="full-artist">-</p>
+        </div>
+
+        <div class="full-progress-container">
+            <input type="range" class="full-progress-bar" id="full-progress" value="0" min="0" max="100" oninput="seekToProgress(this.value)">
+            <div class="full-time-info">
+                <span id="current-time-display">0:00</span>
+                <span id="total-time-display">0:00</span>
+            </div>
+        </div>
+
+        <div class="full-controls">
+            <button class="seek-btn" onclick="seekRelative(-10)">-10s</button>
+            <button class="secondary-btn" onclick="prevTrack()">⏮</button>
+            <button class="big-play-btn" id="full-play-btn" onclick="toggleAudio()">▶</button>
+            <button class="secondary-btn" onclick="nextTrack()">⏭</button>
+            <button class="seek-btn" onclick="seekRelative(10)">+10s</button>
+        </div>
+    </div>
+
+    <!-- 7. NAVIGATION BAS -->
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <span class="nav-icon">🏠</span>
+            <span>Accueil</span>
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">🎵</span>
+            <span>Playlists</span>
+        </div>
+        <div class="nav-item">
+            <span class="nav-icon">📚</span>
+            <span>Bibliothèque</span>
+        </div>
+    </div>
+
+    <script>
+        const playlist = [
+            {
+                title: "FLAC Experience",
+                artist: "Audio Artist • Lossless 16-bit",
+                cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+                duration: 210
+            },
+            {
+                title: "Midnight Lounge",
+                artist: "Acoustic Wave • Hi-Res",
+                cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&h=300&fit=crop",
+                duration: 180
+            },
+            {
+                title: "Urban Beats",
+                artist: "DJ Studio • Master Audio",
+                cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+                duration: 240
+            }
+        ];
+
+        let currentIndex = 0;
+        let audioCtx = null;
+        let oscillator = null;
+        let gainNode = null;
+        let isPlaying = false;
+        let currentTime = 0;
+        let timerInterval = null;
+
+        function renderPlaylist() {
+            const container = document.getElementById('playlist-container');
+            if (!container) return;
+            container.innerHTML = '';
+            playlist.forEach((track, index) => {
+                container.innerHTML += `
+                    <div class="track-card" onclick="playTrackIndex(${index})">
+                        <img src="${track.cover}" alt="Cover">
+                        <div class="track-card-info">
+                            <p class="track-card-title">${track.title}</p>
+                            <p class="track-card-artist">${track.artist}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTrackIndex(index) {
+            currentIndex = index;
+            const track = playlist[currentIndex];
+
+            document.getElementById('mini-title').textContent = track.title;
+            document.getElementById('mini-artist').textContent = track.artist;
+            document.getElementById('mini-cover').src = track.cover;
+
+            document.getElementById('full-title').textContent = track.title;
+            document.getElementById('full-artist').textContent = track.artist;
+            document.getElementById('full-cover').src = track.cover;
+
+            currentTime = 0;
+            updateProgressUI();
+
+            if (!isPlaying) {
+                toggleAudio();
+            } else {
+                restartSynth();
+            }
+        }
+
+        function nextTrack() {
+            currentIndex = (currentIndex + 1) % playlist.length;
+            playTrackIndex(currentIndex);
+        }
+
+        function prevTrack() {
+            currentIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            playTrackIndex(currentIndex);
+        }
+
+        function toggleAudio() {
+            initAudio();
+            isPlaying = !isPlaying;
+
+            const miniBtn = document.getElementById('mini-play-btn');
+            const fullBtn = document.getElementById('full-play-btn');
+
+            if (isPlaying) {
+                startSynth();
+                if (miniBtn) miniBtn.textContent = '⏸';
+                if (fullBtn) fullBtn.textContent = '⏸';
+
+                timerInterval = setInterval(() => {
+                    const track = playlist[currentIndex];
+                    if (currentTime < track.duration) {
+                        currentTime++;
+                        updateProgressUI();
+                    } else {
+                        nextTrack();
+                    }
+                }, 1000);
+            } else {
+                stopAudio();
+            }
+        }
+
+        function startSynth() {
+            if (oscillator) {
+                try { oscillator.stop(); } catch(e){}
+            }
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440 + (currentIndex * 60), audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+        }
+
+        function restartSynth() {
+            if (isPlaying) {
+                startSynth();
+            }
+        }
+
+        function stopAudio() {
+            isPlaying = false;
+            if (oscillator) {
+                try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
+            }
+            clearInterval(timerInterval);
+            const miniBtn = document.getElementById('mini-play-btn');
+            const fullBtn = document.getElementById('full-play-btn');
+            if (miniBtn) miniBtn.textContent = '▶';
+            if (fullBtn) fullBtn.textContent = '▶';
+        }
+
+        function seekRelative(seconds) {
+            const track = playlist[currentIndex];
+            currentTime = Math.max(0, Math.min(track.duration, currentTime + seconds));
+            updateProgressUI();
+        }
+
+        function seekToProgress(percent) {
+            const track = playlist[currentIndex];
+            currentTime = Math.floor((percent / 100) * track.duration);
+            updateProgressUI();
+        }
+
+        function updateProgressUI() {
+            const track = playlist[currentIndex];
+            const percent = (currentTime / track.duration) * 100;
+
+            const miniProgress = document.getElementById('mini-progress-fill');
+            const fullProgress = document.getElementById('full-progress');
+            if (miniProgress) miniProgress.style.width = percent + '%';
+            if (fullProgress) fullProgress.value = percent;
+
+            const currentMins = Math.floor(currentTime / 60);
+            const currentSecs = currentTime % 60;
+            const totalMins = Math.floor(track.duration / 60);
+            const totalSecs = track.duration % 60;
+
+            const currentDisp = document.getElementById('current-time-display');
+            const totalDisp = document.getElementById('total-time-display');
+            if (currentDisp) currentDisp.textContent = `${currentMins}:${currentSecs < 10 ? '0' : ''}${currentSecs}`;
+            if (totalDisp) totalDisp.textContent = `${totalMins}:${totalSecs < 10 ? '0' : ''}${totalSecs}`;
+        }
+
+        function openDrawer() {
+            document.getElementById('drawer-overlay').classList.add('active');
+            document.getElementById('profile-drawer').classList.add('active');
+        }
+
+        function closeDrawer() {
+            document.getElementById('drawer-overlay').classList.remove('active');
+            document.getElementById('profile-drawer').classList.remove('active');
+        }
+
+        function openPage(pageId) {
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function closePage(pageId) {
+            document.getElementById(pageId).classList.remove('active');
+        }
+
+        window.onload = () => {
+            renderPlaylist();
+            playTrackIndex(0);
+            stopAudio();
+        };
+    </script>
+</body>
+</html>
